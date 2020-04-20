@@ -5,7 +5,7 @@ from collections import defaultdict, OrderedDict
 from .writers import *
 from .helpers import _release_lock, _acquire_lock, step_per_key_init_func, filter
 
-valid_outputs = ["tensorboard", "stdout", "csv", 'hdf']
+valid_outputs = ["tensorboard", "stdout", 'hdf']
 
 def validate_outputs(outputs):
     for d in outputs:

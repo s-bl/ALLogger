@@ -11,6 +11,7 @@ jupyter = "*"
 pandas = "*"
 tables = "*"
 tensorboardx = "*"
+matplotlib = "*"
 
 [requires]
 python_version = "3.7"

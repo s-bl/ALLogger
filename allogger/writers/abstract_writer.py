@@ -5,8 +5,6 @@ class AbstractWriter(ABC):
     def __init__(self, filter='.*'):
         self.filter = filter
 
-
-
     @abstractmethod
     def add_scalar(self, key, value, step):
         raise NotImplementedError
