@@ -25,6 +25,6 @@ class TensorboardWriter(AbstractWriter):
     def __repr__(self):
         return 'TensorboardWriter'
 
-    def __del__(self):
+    def close(self):
         print('killed TensorboardWriter')
 

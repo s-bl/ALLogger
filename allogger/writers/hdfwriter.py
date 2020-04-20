@@ -40,10 +40,7 @@ class HDFWriter(AbstractWriter):
 
     def write_to_disc(self, force=False):
         if (timestamp() - self.last_write_time) < self.min_time_diff_btw_disc_writes and not force:
-            print(timestamp() - self.last_write_time, self.min_time_diff_btw_disc_writes, 'skip')
             return
-
-        print(timestamp() - self.last_write_time, self.min_time_diff_btw_disc_writes, 'do it')
 
         for (type, k), v in self.data.items():
             data = pd.DataFrame(v, columns=['step', 'time', 'wall_time', 'value']).set_index('step')
@@ -80,7 +77,7 @@ class HDFWriter(AbstractWriter):
     def __repr__(self):
         return 'HDFWriter'
 
-    def __del__(self):
+    def close(self):
         self.write_to_disc(force=True)
         print('killed HDFWriter')
 
