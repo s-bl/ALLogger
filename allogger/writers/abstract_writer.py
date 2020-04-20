@@ -26,3 +26,7 @@ class AbstractWriter(ABC):
     @abstractmethod
     def __repr__(self):
         raise NotImplementedError
+
+    @abstractmethod
+    def close(self):
+        raise NotImplementedError

@@ -79,5 +79,4 @@ class HDFWriter(AbstractWriter):
 
     def close(self):
         self.write_to_disc(force=True)
-        print('killed HDFWriter')
 

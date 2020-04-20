@@ -26,5 +26,4 @@ class TensorboardWriter(AbstractWriter):
         return 'TensorboardWriter'
 
     def close(self):
-        print('killed TensorboardWriter')
-
+        self.summary_writer.flush()
