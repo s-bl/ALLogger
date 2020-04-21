@@ -25,13 +25,13 @@ class TensorboardWriter(AbstractWriter):
                 _acquire_lock()
                 try:
                     if type == 'scalar':
-                        self.summary_writer.add_scalar(k, step, value)
+                        self.summary_writer.add_scalar(k, value, step)
                     elif type == 'histogram':
-                        self.summary_writer.add_histogram(k, step, value)
+                        self.summary_writer.add_histogram(k, value, step)
                     elif type == 'image':
-                        self.summary_writer.add_image(k, step, value)
+                        self.summary_writer.add_image(k, value, step)
                     elif type == 'scalars':
-                        self.summary_writer.add_scalars(k, step, value)
+                        self.summary_writer.add_scalars(k, value, step)
                 finally:
                     _release_lock()
 
