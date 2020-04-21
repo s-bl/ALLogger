@@ -1,9 +1,10 @@
 import os
 import numpy as np
 from collections import defaultdict, OrderedDict
+from multiprocessing import current_process, Manager
 
 from .writers import *
-from .helpers import _release_lock, _acquire_lock, step_per_key_init_func, filter
+from .helpers import _release_lock, _acquire_lock, filter
 
 valid_outputs = ["tensorboard", "stdout", 'hdf']
 
@@ -45,31 +46,42 @@ class LoggerManager():
 
 class Logger:
 
-    def __init__(self, scope, parent, logdir=None, default_outputs=None, hdf_writer_params=None, tensorboard_writer_params=None):
+    def __init__(self, scope, parent, **kwargs):
 
-        self.scope = scope
+        self._scope = scope
         self.parent = self if scope == 'root' else parent
 
-        self.configure(logdir, default_outputs, hdf_writer_params, tensorboard_writer_params)
+        self.configure(**kwargs)
 
-    def configure(self, logdir, default_outputs, hdf_writer_params=None, tensorboard_writer_params=None):
+    @property
+    def scope(self):
+        return self._scope + '-' + current_process().name.replace('-', '')
+
+    def configure(self, logdir=None, default_outputs=None, hdf_writer_params=None, tensorboard_writer_params=None,
+                  log_only_main_process=False):
+
         self.logdir = logdir
 
         if default_outputs is not None:
             validate_outputs(default_outputs)
         self.default_outputs = default_outputs
 
-        if self.scope == 'root':
-            self.step_per_key = defaultdict(step_per_key_init_func)
+        self.log_only_main_process = log_only_main_process
+
+        if self._scope == 'root':
+            self.manager = Manager()
+            self.step_per_key = self.manager.dict()
 
         self.tensorboard_writer = None
         self.hdf_writer = None
         if logdir is not None:
             tensorboard_writer_params = tensorboard_writer_params if tensorboard_writer_params is not None else {}
-            self.tensorboard_writer = TensorboardWriter(os.path.join(logdir, "events"), **tensorboard_writer_params)
+            self.tensorboard_writer = TensorboardWriter(scope=self._scope, output_dir=os.path.join(logdir, "events"),
+                                                        **tensorboard_writer_params)
 
             hdf_writer_params = hdf_writer_params if hdf_writer_params is not None else {}
-            self.hdf_writer = HDFWriter(os.path.join(logdir, "events"), **hdf_writer_params)
+            self.hdf_writer = HDFWriter(scope=self._scope, output_dir=os.path.join(logdir, "events"),
+                                        **hdf_writer_params)
 
     def infer_datatype(self, data):
         if np.isscalar(data):
@@ -110,19 +122,24 @@ class Logger:
             output_callable(key, data_type, data)
 
     def rv_step_per_key(self):
-        if self.scope != 'root':
+        if self._scope != 'root':
             return self.parent.rv_step_per_key()
         else:
             return self.step_per_key
 
     @filter
     def _to_writer(self, writer, key, data_type, data, step=None):
+        if self.log_only_main_process and current_process().name != 'MainProcess':
+            return
+
         if key is None:
             raise ValueError(f"Logging with {writer} requires a valid key")
 
         if step is None:
+            if (self.scope, key) not in self.rv_step_per_key():
+                self.rv_step_per_key()[(self.scope, key)] = 1
             step = self.rv_step_per_key()[(self.scope, key)]
-            self.rv_step_per_key()[(self.scope, key)] += 1
+            self.rv_step_per_key()[(self.scope, key)] = self.rv_step_per_key()[(self.scope, key)] + 1
 
         if data_type == "scalar":
             data_specific_writer_callable = writer.add_scalar
@@ -135,7 +152,10 @@ class Logger:
         else:
             raise NotImplementedError(f"{writer} does not support type {data_type}")
 
-        data_specific_writer_callable(self.scope + "/" + key, data, step)
+        scope = self.scope
+        if scope.endswith('-MainProcess'):
+            scope = scope[:-12]
+        data_specific_writer_callable(scope + "/" + key, data, step)
 
         return step
 
@@ -166,8 +186,8 @@ class Logger:
 root = Logger('root', None)
 manager = LoggerManager(root)
 
-def basic_configure(logdir, default_outputs, hdf_writer_params=None, tensorboard_writer_params=None):
-    root.configure(logdir, default_outputs, hdf_writer_params, tensorboard_writer_params)
+def basic_configure(*args, **kwargs):
+    root.configure(*args, **kwargs)
 
 def get_logger(scope, *args, **kwargs):
     return manager.get_logger(scope, *args, **kwargs)
@@ -175,5 +195,4 @@ def get_logger(scope, *args, **kwargs):
 def close():
     for logger in reversed(manager.logger_dict.values()):
         print(logger.scope)
-        manager.logger_dict[logger.scope] = None
         logger.close()

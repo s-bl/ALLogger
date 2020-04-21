@@ -1,9 +1,6 @@
 from multiprocessing import Lock
 from re import search as re_search
 
-def step_per_key_init_func():
-    return 1
-
 _lock = Lock()
 
 def _acquire_lock():

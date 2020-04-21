@@ -1,24 +1,32 @@
-from multiprocessing import Process
+from multiprocessing import Process, current_process
 from time import sleep
 import numpy as np
 
 import allogger
 
 def worker_process(id):
-    logger = allogger.get_logger(f'process_{id}')
+    if id % 2 == 0:
+        logger = allogger.get_logger(f'worker')
+    else:
+        logger = allogger.get_logger(scope=f'worker', logdir=f'/tmp/allogger/multiprocessing/{current_process().name}')
 
     for i in range(10):
         logger.log(i, 'value')
         sleep(np.random.uniform(1, 5))
 
-    allogger.close()
+    if id % 2 != 0:
+        allogger.close()
 
 def main():
     allogger.basic_configure('/tmp/allogger/multiprocessing', ['tensorboard'])
     logger = allogger.get_logger('main')
 
-    workers = []
     for i in range(10):
+        logger.log(i, 'value')
+        sleep(np.random.uniform(1, 5))
+
+    workers = []
+    for i in range(20):
         worker = Process(target=worker_process,
                                          args=(i,))
         workers.append(worker)

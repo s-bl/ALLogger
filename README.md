@@ -80,7 +80,7 @@ allogger.api.hdf.read_from_key(hdf_log_file, key)
 
 See `test/multiprocessing_test.py`.
 
-Make sure that each subprocess calls
+Make sure that each subprocess that creates a logger with a custom logdir calls
 
 ```
 allogger.close()
