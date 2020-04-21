@@ -4,7 +4,7 @@ from threading import Timer
 
 class AbstractWriter(ABC):
 
-    def __init__(self, scope, output_dir, min_time_diff_btw_disc_writes=10, filter='.*'):
+    def __init__(self, scope, output_dir, min_time_diff_btw_disc_writes=180, filter='.*'):
         self.scope = scope
         self.output_dir = output_dir
         self.filter = filter
