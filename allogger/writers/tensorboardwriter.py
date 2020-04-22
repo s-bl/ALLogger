@@ -63,5 +63,6 @@ class TensorboardWriter(AbstractWriter):
         AbstractWriter.close(self)
         if current_process().name == 'MainProcess' or self.scope != 'root':
             self.write_to_writer()
+            self.summary_writer.flush()
             self.summary_writer.close()
             print(f'{self} closed')
