@@ -1,12 +1,12 @@
 import os
 import numpy as np
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict
 from multiprocessing import current_process, Manager
 
 from .writers import *
 from .helpers import _release_lock, _acquire_lock, filter
 
-valid_outputs = ["tensorboard", "stdout", 'hdf']
+valid_outputs = ["tensorboard", 'hdf']
 
 def validate_outputs(outputs):
     for d in outputs:
@@ -58,7 +58,7 @@ class Logger:
         return self._scope + '-' + current_process().name.replace('-', '')
 
     def configure(self, logdir=None, default_outputs=None, hdf_writer_params=None, tensorboard_writer_params=None,
-                  log_only_main_process=False):
+                  log_only_main_process=False, file_writer_params=None):
 
         self.logdir = logdir
 
@@ -74,14 +74,19 @@ class Logger:
 
         self.tensorboard_writer = None
         self.hdf_writer = None
+        self.file_writer = None
         if logdir is not None:
-            tensorboard_writer_params = tensorboard_writer_params if tensorboard_writer_params is not None else {}
+            tensorboard_writer_params = tensorboard_writer_params if tensorboard_writer_params else {}
             self.tensorboard_writer = TensorboardWriter(scope=self._scope, output_dir=os.path.join(logdir, "events"),
                                                         **tensorboard_writer_params)
 
-            hdf_writer_params = hdf_writer_params if hdf_writer_params is not None else {}
+            hdf_writer_params = hdf_writer_params if hdf_writer_params else {}
             self.hdf_writer = HDFWriter(scope=self._scope, output_dir=os.path.join(logdir, "events"),
                                         **hdf_writer_params)
+
+            file_writer_params = file_writer_params if file_writer_params else {}
+            self.file_writer = FileWriter(scope=self._scope, output_dir=os.path.join(logdir),
+                                        **file_writer_params)
 
     def infer_datatype(self, data):
         if np.isscalar(data):
@@ -127,6 +132,13 @@ class Logger:
         else:
             return self.step_per_key
 
+    def gen_key(self, key=None):
+        scope = self.scope
+        if scope.endswith('-MainProcess'):
+            scope = scope[:-12]
+
+        return scope + (('/' + key) if key else '')
+
     @filter
     def _to_writer(self, writer, key, data_type, data, step=None):
         if self.log_only_main_process and current_process().name != 'MainProcess':
@@ -152,10 +164,7 @@ class Logger:
         else:
             raise NotImplementedError(f"{writer} does not support type {data_type}")
 
-        scope = self.scope
-        if scope.endswith('-MainProcess'):
-            scope = scope[:-12]
-        data_specific_writer_callable(scope + "/" + key, data, step)
+        data_specific_writer_callable(self.gen_key(key), data, step)
 
         return step
 
@@ -170,11 +179,15 @@ class Logger:
 
         return self._to_writer(tensorboard_writer or self.parent.hdf_writer, key, data_type, data, step)
 
-    def to_stdout(self, key, data_type, data):
-        if not data_type == "scalar":
-            raise NotImplementedError("Only data type 'scalar' supported for stdout output")
+    def to_stdout(self, data):
+        print(data)
 
-        print(f"[{self.scope}] {key}: {data}")
+    def info(self, data, to_stdout=False):
+        file_writer = self.file_writer if self.file_writer else self.parent.file_writer
+        message = file_writer.add_text(self.gen_key(None), data)
+
+        if to_stdout is True:
+            self.to_stdout(message)
 
     def close(self):
         print(f'{self.scope} logger killed')
@@ -182,6 +195,8 @@ class Logger:
             self.hdf_writer.close()
         if self.tensorboard_writer is not None:
             self.tensorboard_writer.close()
+        if self.file_writer is not None:
+            self.file_writer.close()
 
 root = Logger('root', None)
 manager = LoggerManager(root)

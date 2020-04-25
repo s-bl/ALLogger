@@ -22,6 +22,7 @@ setuptools.setup(
         'pandas',
         'tensorboardX',
         'numpy',
-        'tables'
+        'tables',
+        'gitpython'
       ],
 )

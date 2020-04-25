@@ -94,5 +94,4 @@ Custom writers can be implemented in writers. Contributions are welcome.
 
 ## Todo
 
-- Report/log environment state (git repo/branch/commit/etc., hostname, etc.)
 - Implement more writers (csv, etc.)
