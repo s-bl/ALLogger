@@ -23,17 +23,18 @@ class FileWriter(AbstractWriter):
 
     def write_to_disc(self):
 
-        _acquire_lock()
-        try:
-            with open(os.path.join(self.output_dir, self.filename + '.log'), 'a') as f:
-                for line in self.data['text']:
-                    f.write(line + '\n')
-        except:
-            print(f'Error while writing to {os.path.join(self.output_dir, self.filename + ".log")}')
-        finally:
-            _release_lock()
+        if 'text' in self.data:
+            _acquire_lock()
+            try:
+                with open(os.path.join(self.output_dir, self.filename + '.log'), 'a') as f:
+                    for line in self.data['text']:
+                        f.write(line + '\n')
+            except:
+                print(f'Error while writing to {os.path.join(self.output_dir, self.filename + ".log")}')
+            finally:
+                _release_lock()
 
-        self.data.clear()
+            self.data.clear()
 
     def fixed_prefix(self, key):
         return f'[{key}] {time()} > '
