@@ -49,6 +49,20 @@ To log data use
 logger.log(value, key)
 ```
 
+### Logfile and console output
+
+To log messages to a logfile (located in ``logdir``) use
+
+```
+logger.info(message)
+```
+
+To also print the massage to the console, use
+
+```
+logger.info(message)
+```
+
 ### Filtering
 
 In principle, you can spam your code with `logger.log(...)` statements and afterwards use a filtering mechanism based on regex to only log
@@ -59,6 +73,14 @@ hdf_writer_params={'filter': '.*loss.*'}
 ```
 
 to `basic_configure` or `get_logger`.
+
+### Log environment state
+
+To log the environment state (hostname, user, git meta data) use
+
+```
+allogger.utils.report_env()
+```
 
 ## API for reading the data
 
