@@ -6,6 +6,7 @@ import allogger
 
 def main():
     allogger.basic_configure('/tmp/allogger/singleprocess', ['tensorboard'])
+    allogger.utils.report_env(to_stdout=True)
     logger = allogger.get_logger(scope='main')
 
     start = 0
@@ -16,6 +17,7 @@ def main():
 
     for step in range(start, start+10):
         logger.log(step, 'value')
+        logger.info(f'We are in step {step}')
         sleep(np.random.uniform(1, 5))
 
     np.save(os.path.join(allogger.get_logger('root').logdir, 'checkpoint'), (step+1, dict(allogger.get_logger('root').step_per_key)))

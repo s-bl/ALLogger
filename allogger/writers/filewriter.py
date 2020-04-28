@@ -4,7 +4,7 @@ from multiprocessing import current_process
 
 from .abstract_writer import AbstractWriter
 from .helpers import gen_filename, time, add_value_wrapper
-from ..helpers import _acquire_lock, _release_lock
+from ..helpers import concurrent
 
 class FileWriter(AbstractWriter):
     def __init__(self, **kwargs):
@@ -21,24 +21,23 @@ class FileWriter(AbstractWriter):
         AbstractWriter._run(self)
         self.write_to_disc()
 
+    @concurrent
     def write_to_disc(self):
 
         if 'text' in self.data:
-            _acquire_lock()
             try:
                 with open(os.path.join(self.output_dir, self.filename + '.log'), 'a') as f:
                     for line in self.data['text']:
                         f.write(line + '\n')
             except:
                 print(f'Error while writing to {os.path.join(self.output_dir, self.filename + ".log")}')
-            finally:
-                _release_lock()
 
             self.data.clear()
 
     def fixed_prefix(self, key):
         return f'[{key}] {time()} > '
 
+    @concurrent
     @add_value_wrapper
     def add_text(self, key, value):
         if 'text' not in self.data:
@@ -49,21 +48,25 @@ class FileWriter(AbstractWriter):
 
         return message
 
+    @concurrent
     @add_value_wrapper
     def add_scalar(self, key, value, step):
-        pass
+        raise NotImplementedError(f'{self} only supports add_text')
 
+    @concurrent
     @add_value_wrapper
     def add_histogram(self, key, value, step):
-        pass
+        raise NotImplementedError(f'{self} only supports add_text')
 
+    @concurrent
     @add_value_wrapper
     def add_image(self, key, value, step):
-        pass
+        raise NotImplementedError(f'{self} only supports add_text')
 
+    @concurrent
     @add_value_wrapper
     def add_scalars(self, key, value, step):
-        pass
+        raise NotImplementedError(f'{self} only supports add_text')
 
     def __repr__(self):
         return 'FileWriter'

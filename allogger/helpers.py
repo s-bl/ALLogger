@@ -18,3 +18,14 @@ def filter(f):
         return f(self, writer, key, *args, **kwargs)
 
     return wrapper
+
+def concurrent(f):
+    def wrapper(*args, **kwargs):
+        _acquire_lock()
+        try:
+            res = f(*args, **kwargs)
+        finally:
+            _release_lock()
+
+        return res
+    return wrapper
