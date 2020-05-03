@@ -27,6 +27,7 @@ class AbstractWriter(ABC):
     def start(self):
         if not self.is_running:
             self._timer = Timer(self.min_time_diff_btw_disc_writes, self._run)
+            self._timer.daemon = True
             self._timer.start()
             self._is_running = True
 
