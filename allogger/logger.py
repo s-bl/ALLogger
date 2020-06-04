@@ -57,10 +57,18 @@ class Logger:
     def scope(self):
         return self._scope + '-' + current_process().name.replace('-', '')
 
+    @property
+    def logdir(self):
+        return self._logdir if self._logdir is not None else self.parent.logdir
+
+    @logdir.setter
+    def logdir(self, value):
+        self._logdir = value
+
     def configure(self, logdir=None, default_outputs=None, hdf_writer_params=None, tensorboard_writer_params=None,
                   log_only_main_process=False, file_writer_params=None):
 
-        self.logdir = logdir
+        self._logdir = logdir
 
         if default_outputs is not None:
             validate_outputs(default_outputs)
