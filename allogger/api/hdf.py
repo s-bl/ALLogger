@@ -1,6 +1,9 @@
-from pandas import HDFStore, read_hdf
+from pandas import HDFStore, read_hdf, concat
+from glob import glob
+import os
 
-def list_keys(file):
+def list_keys(path):
+    file = sorted(glob(os.path.join(path, '*.h5')))[0]
     with HDFStore(file) as hdf:
         keys = hdf.keys()
 
@@ -15,5 +18,10 @@ def list_keys(file):
         print('Images')
         print('\t' + '\n\t'.join(images))
 
-def read_from_key(file, key):
-    return read_hdf(file, key)
+def read_from_key(path, key):
+    datas = []
+    for file in sorted(glob(os.path.join(path, '*.h5'))):
+        data = read_hdf(file, key)
+        print(f'Extracting {key} from {file}, index {data.index[0]} to {data.index[-1]}')
+        datas.append(data)
+    return concat(datas)
