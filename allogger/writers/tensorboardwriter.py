@@ -57,6 +57,12 @@ class TensorboardWriter(AbstractWriter):
     def add_scalars(self, key, value, step):
         self.add_data('scalars', key, value, step)
 
+    @concurrent
+    @add_value_wrapper
+    def add_array(self, key, value, step):
+        # Skipping array data
+        pass
+
     def __repr__(self):
         return 'TensorboardWriter'
 

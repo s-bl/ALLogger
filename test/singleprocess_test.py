@@ -7,7 +7,7 @@ import allogger
 def main():
     allogger.basic_configure('/tmp/allogger/singleprocess', ['tensorboard'], hdf_writer_params=dict(
         min_time_diff_btw_disc_writes=10
-    ))
+    ), debug=True)
     allogger.utils.report_env(to_stdout=True)
     logger = allogger.get_logger(scope='main')
 
@@ -23,6 +23,9 @@ def main():
 
     logger.log(np.random.rand(1, 5, 5), 'blub')
     logger.log(np.random.rand(1, 5, 5), 'blub')
+
+    logger.log(np.random.rand(10), 'array', data_type='array')
+    logger.log(np.random.rand(10), 'array', data_type='array')
 
     np.save(os.path.join(allogger.get_logger('root').logdir, 'checkpoint'), (step+1, dict(allogger.get_logger('root').step_per_key)))
 

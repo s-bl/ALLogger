@@ -29,8 +29,10 @@ class FileWriter(AbstractWriter):
                 with open(os.path.join(self.output_dir, self.filename + '.log'), 'a') as f:
                     for line in self.data['text']:
                         f.write(line + '\n')
-            except:
+            except Exception as e:
                 print(f'Error while writing to {os.path.join(self.output_dir, self.filename + ".log")}')
+                if self.debug:
+                    print(str(e))
 
             self.data.clear()
 
@@ -66,6 +68,11 @@ class FileWriter(AbstractWriter):
     @concurrent
     @add_value_wrapper
     def add_scalars(self, key, value, step):
+        raise NotImplementedError(f'{self} only supports add_text')
+
+    @concurrent
+    @add_value_wrapper
+    def add_array(self, key, value, step):
         raise NotImplementedError(f'{self} only supports add_text')
 
     def __repr__(self):

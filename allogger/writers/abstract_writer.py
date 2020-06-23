@@ -1,14 +1,15 @@
 from abc import ABC, abstractmethod
-from multiprocessing import SimpleQueue, current_process, Manager
+from multiprocessing import current_process, Manager
 from threading import Timer
 
 class AbstractWriter(ABC):
 
-    def __init__(self, scope, output_dir, min_time_diff_btw_disc_writes=180, filter='.*'):
+    def __init__(self, scope, output_dir, debug, min_time_diff_btw_disc_writes=180, filter='.*'):
         self.scope = scope
         self.output_dir = output_dir
         self.filter = filter
         self.min_time_diff_btw_disc_writes = min_time_diff_btw_disc_writes
+        self.debug = debug
 
         self.is_running = False
         self._timer = None
@@ -49,6 +50,10 @@ class AbstractWriter(ABC):
 
     @abstractmethod
     def add_scalars(self, key, value, step):
+        raise NotImplementedError
+
+    @abstractmethod
+    def add_array(self, key, value, step):
         raise NotImplementedError
 
     @abstractmethod

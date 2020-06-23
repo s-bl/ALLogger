@@ -29,8 +29,10 @@ class HDFWriter(AbstractWriter):
             data = pd.DataFrame(list(v), columns=['step', 'time', 'wall_time', 'value']).set_index('step')
             try:
                 data.to_hdf(os.path.join(self.output_dir, self.filename + '.h5'), key=type + '/' + k.split('.')[-1].replace('-', '/'), append=True, format='table')
-            except:
+            except Exception as e:
                 print(f'Error while writing to {os.path.join(self.output_dir, self.filename + ".h5")}')
+                if self.debug:
+                    print(str(e))
 
         self.data.clear()
 
@@ -56,6 +58,11 @@ class HDFWriter(AbstractWriter):
     @add_value_wrapper
     def add_scalars(self, key, value, step):
         pass
+
+    @concurrent
+    @add_value_wrapper
+    def add_array(self, key, value, step):
+        self.data[('array', key)].append(self.fixed_data_prefix(step) + [str(value.tolist())])
 
     def __repr__(self):
         return 'HDFWriter'

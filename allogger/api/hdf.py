@@ -12,6 +12,7 @@ def list_keys(path):
         scalars = [k for k in keys if k.startswith('/scalar')]
         histograms = [k for k in keys if k.startswith('/histrogram')]
         images = [k for k in keys if k.startswith('/image')]
+        arrays = [k for k in keys if k.startswith('/array')]
 
         print('Scalars:')
         print('\t' + '\n\t'.join(scalars))
@@ -19,6 +20,8 @@ def list_keys(path):
         print('\t' + '\n\t'.join(histograms))
         print('Images:')
         print('\t' + '\n\t'.join(images))
+        print('Arrays:')
+        print('\t' + '\n\t'.join(arrays))
 
 def read_from_key(path, key):
     datas = []
@@ -30,7 +33,7 @@ def read_from_key(path, key):
 
     datas = concat(datas)
 
-    if key.startswith('/image'):
+    if key.startswith('/image') or key.startswith('/array'):
         datas['value'] = datas['value'].apply(lambda x: np.asarray(literal_eval(x)))
 
     return datas

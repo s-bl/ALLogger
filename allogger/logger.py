@@ -66,7 +66,7 @@ class Logger:
         self._logdir = value
 
     def configure(self, logdir=None, default_outputs=None, hdf_writer_params=None, tensorboard_writer_params=None,
-                  log_only_main_process=False, file_writer_params=None):
+                  log_only_main_process=False, file_writer_params=None, debug=False):
 
         self._logdir = logdir
 
@@ -86,15 +86,17 @@ class Logger:
         if logdir is not None:
             tensorboard_writer_params = tensorboard_writer_params if tensorboard_writer_params else {}
             self.tensorboard_writer = TensorboardWriter(scope=self._scope, output_dir=os.path.join(logdir, "events"),
-                                                        **tensorboard_writer_params)
+                                                        debug=debug, **tensorboard_writer_params)
 
             hdf_writer_params = hdf_writer_params if hdf_writer_params else {}
             self.hdf_writer = HDFWriter(scope=self._scope, output_dir=os.path.join(logdir, "events"),
-                                        **hdf_writer_params)
+                                        debug=debug, **hdf_writer_params)
 
             file_writer_params = file_writer_params if file_writer_params else {}
             self.file_writer = FileWriter(scope=self._scope, output_dir=os.path.join(logdir),
-                                        **file_writer_params)
+                                          debug=debug, **file_writer_params)
+
+        self.debug = debug
 
     def infer_datatype(self, data):
         if np.isscalar(data):
@@ -169,6 +171,9 @@ class Logger:
             data_specific_writer_callable = writer.add_image
         elif data_type == 'scalars':
             data_specific_writer_callable = writer.add_scalars
+        elif data_type == 'array':
+            # needs to be specified explicitly, because arrays can have arbitrary size
+            data_specific_writer_callable = writer.add_array
         else:
             raise NotImplementedError(f"{writer} does not support type {data_type}")
 

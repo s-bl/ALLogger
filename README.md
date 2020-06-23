@@ -116,9 +116,14 @@ Custom writers can be implemented in writers. Contributions are welcome.
 
 ## Changelog
 
+0.2.0 -> 0.2.1
+
+- Added debug flag
+- Implemented logging of arbitrary shaped arrays to hdf file
+
 0.1.0 -> 0.2.0
 
-- Implemented image writer. Images need to be in the CHW format.
+- Implemented logging of images. Images need to be in the CHW format.
 - Changed filename from hostname_timestamp to timestamp_hostname for correct ordering
 - Automatic concatenation of multiple event files
 
