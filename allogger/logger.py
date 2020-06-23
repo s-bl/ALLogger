@@ -2,6 +2,7 @@ import os
 import numpy as np
 from collections import OrderedDict
 from multiprocessing import current_process, Manager
+from shutil import rmtree
 
 from .writers import *
 from .helpers import _release_lock, _acquire_lock, filter
@@ -66,7 +67,20 @@ class Logger:
         self._logdir = value
 
     def configure(self, logdir=None, default_outputs=None, hdf_writer_params=None, tensorboard_writer_params=None,
-                  log_only_main_process=False, file_writer_params=None, debug=False):
+                  log_only_main_process=False, file_writer_params=None, debug=False, default_path_exists='c'):
+
+        if logdir is not None and os.path.exists(logdir):
+            response = input(f'logdir {logdir} already exists [(C)ontinue/(cl)ear/(a)bort: ') if \
+                default_path_exists == 'ask' else default_path_exists
+            if response.lower() in ['c', 'continue', '']:
+                pass
+            elif response.lower() in ['cl', 'clear']:
+                print(f'Clearing loggdir {logdir}')
+                rmtree(logdir, ignore_errors=True)
+            elif response.lower() in ['a', 'abort']:
+                exit(1)
+            else:
+                raise RuntimeError('Unrecognized response. Valid responses are \'c\', \'cl\' or \'a\'')
 
         self._logdir = logdir
 

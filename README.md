@@ -116,6 +116,10 @@ Custom writers can be implemented in writers. Contributions are welcome.
 
 ## Changelog
 
+0.2.0 -> 0.2.2
+
+- Handle existing logdir
+
 0.2.0 -> 0.2.1
 
 - Added debug flag
