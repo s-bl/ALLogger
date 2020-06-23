@@ -50,7 +50,7 @@ class HDFWriter(AbstractWriter):
     @concurrent
     @add_value_wrapper
     def add_image(self, key, value, step):
-        pass
+        self.data[('image', key)].append(self.fixed_data_prefix(step) + [str(value.tolist())])
 
     @concurrent
     @add_value_wrapper

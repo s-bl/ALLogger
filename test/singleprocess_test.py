@@ -5,7 +5,9 @@ import os
 import allogger
 
 def main():
-    allogger.basic_configure('/tmp/allogger/singleprocess', ['tensorboard'])
+    allogger.basic_configure('/tmp/allogger/singleprocess', ['tensorboard'], hdf_writer_params=dict(
+        min_time_diff_btw_disc_writes=10
+    ))
     allogger.utils.report_env(to_stdout=True)
     logger = allogger.get_logger(scope='main')
 
@@ -18,7 +20,9 @@ def main():
     for step in range(start, start+10):
         logger.log(step, 'value')
         logger.info(f'We are in step {step}')
-        sleep(np.random.uniform(1, 5))
+
+    logger.log(np.random.rand(1, 5, 5), 'blub')
+    logger.log(np.random.rand(1, 5, 5), 'blub')
 
     np.save(os.path.join(allogger.get_logger('root').logdir, 'checkpoint'), (step+1, dict(allogger.get_logger('root').step_per_key)))
 

@@ -89,13 +89,13 @@ allogger.utils.report_env()
 To list all keys present in a `.h5` file, use
 
 ```
-allogger.api.hdf.list_keys(hdf_log_file)
+allogger.api.hdf.list_keys(hdf_log_directory)
 ```
 
 To load a particular key from a `.h5` file, use
 
 ```
-allogger.api.hdf.read_from_key(hdf_log_file, key)
+allogger.api.hdf.read_from_key(hdf_log_directory, key)
 ```
 
 ## Multiprocessing
@@ -113,6 +113,14 @@ to ensure that all data of every subprocess is written to disc.
 ## Custom writers
 
 Custom writers can be implemented in writers. Contributions are welcome.
+
+## Changelog
+
+0.1.0 -> 0.2.0
+
+- Implemented image writer. Images need to be in the CHW format.
+- Changed filename from hostname_timestamp to timestamp_hostname for correct ordering
+- Automatic concatenation of multiple event files
 
 ## Todo
 

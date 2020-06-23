@@ -107,7 +107,7 @@ class Logger:
                     return "scalar"
                 if data.size > 1:
                     return "histogram"
-            elif data.ndim == 2:
+            elif data.ndim == 3:
                 return "image"
             else:
                 raise NotImplementedError("Numpy arrays with more than 2 dimensions are not supported")

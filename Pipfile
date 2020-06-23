@@ -13,6 +13,7 @@ tables = "*"
 tensorboardx = "*"
 matplotlib = "*"
 gitpython = "*"
+pillow = "*"
 
 [requires]
 python_version = "3.7"

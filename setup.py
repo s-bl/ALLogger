@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="AL-Logger",
-    version="0.1.0",
+    version="0.2.0",
     author="Sebastian Blaes",
     author_email="sblaes@tue.mpg.de",
     description="Logging experimental data",
@@ -23,6 +23,7 @@ setuptools.setup(
         'tensorboardX',
         'numpy',
         'tables',
-        'gitpython'
+        'gitpython',
+        'pillow'
       ],
 )
