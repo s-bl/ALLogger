@@ -21,3 +21,5 @@ def report_env(to_stdout=False):
         root.info(f'We are on branch {active_branch} using commit {latest_commit_sha_short}', to_stdout=to_stdout)
     except InvalidGitRepositoryError:
         root.info(f'{project_path} is not a git repo', to_stdout=to_stdout)
+
+    root.info(f'Saving data to {root.logdir}', to_stdout=to_stdout)

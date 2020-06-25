@@ -116,7 +116,13 @@ Custom writers can be implemented in writers. Contributions are welcome.
 
 ## Changelog
 
-0.2.0 -> 0.2.2
+0.2.2 -> 0.2.3
+
+- Report logdir in utils.report_env
+- Set precision in hdf writer for image and array data
+- Warn user about large file sizes if storing arrays or images
+
+0.2.1 -> 0.2.2
 
 - Handle existing logdir
 

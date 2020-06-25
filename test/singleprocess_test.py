@@ -6,7 +6,7 @@ import allogger
 
 def main():
     allogger.basic_configure('/tmp/allogger/singleprocess', ['tensorboard'], hdf_writer_params=dict(
-        min_time_diff_btw_disc_writes=10
+        min_time_diff_btw_disc_writes=10, precision=2,
     ), debug=True, default_path_exists='ask')
     allogger.utils.report_env(to_stdout=True)
     logger = allogger.get_logger(scope='main')
