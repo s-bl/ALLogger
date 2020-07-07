@@ -9,10 +9,12 @@ from .helpers import _release_lock, _acquire_lock, filter
 
 valid_outputs = ["tensorboard", 'hdf']
 
+
 def validate_outputs(outputs):
     for d in outputs:
         if d not in valid_outputs:
             raise ValueError(f"{d} is not a valid output")
+
 
 class LoggerManager():
 
@@ -44,6 +46,7 @@ class LoggerManager():
                 break
             parent_scope = parent_scope[:parent_scope.rfind('.')]
         return self.logger_dict[parent_scope]
+
 
 class Logger:
 
@@ -225,16 +228,33 @@ class Logger:
         if self.file_writer is not None:
             self.file_writer.close()
 
-root = Logger('root', None)
-manager = LoggerManager(root)
+
+root = None
+manager = None
+
+
+def get_root():
+    global root
+    if root is None:
+        root = Logger('root', None)
+    return root
+
 
 def basic_configure(*args, **kwargs):
+    root = get_root()
     root.configure(*args, **kwargs)
 
+
 def get_logger(scope, *args, **kwargs):
+    global manager
+    if manager is None:
+        manager = LoggerManager(root)
     return manager.get_logger(scope, *args, **kwargs)
 
+
 def close():
-    for logger in reversed(manager.logger_dict.values()):
-        print(logger.scope)
-        logger.close()
+    global manager
+    if manager is not None:
+        for logger in reversed(manager.logger_dict.values()):
+            print(logger.scope)
+            logger.close()

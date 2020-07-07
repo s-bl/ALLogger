@@ -1,14 +1,14 @@
 import os
 
-from . import get_logger
+from . import get_logger, get_root
 
-root = get_logger('root')
 
 def report_env(to_stdout=False):
     from git import Repo, InvalidGitRepositoryError
     from socket import gethostname
     from getpass import getuser
 
+    root = get_root()
     root.info(f'Running on {gethostname()} as {getuser()}', to_stdout=to_stdout)
 
     project_path = os.path.dirname(os.path.realpath(__file__))
