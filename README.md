@@ -116,6 +116,10 @@ Custom writers can be implemented in writers. Contributions are welcome.
 
 ## Changelog
 
+0.2.3 -> 0.2.4
+
+- Enable/Disable logger globally
+
 0.2.2 -> 0.2.3
 
 - Report logdir in utils.report_env
