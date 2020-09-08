@@ -3,6 +3,9 @@ import numpy as np
 from collections import OrderedDict
 from multiprocessing import current_process, Manager
 from shutil import rmtree
+from abc import ABC
+from time import time
+from warnings import warn
 
 from .writers import *
 from .helpers import _release_lock, _acquire_lock, filter
@@ -34,7 +37,7 @@ class LoggerManager():
                 return self.logger_dict[scope]
             else:
                 parent = self._get_parent(scope)
-                self.logger_dict[scope] = Logger(scope, parent, *args, **kwargs)
+                self.logger_dict[scope] = loggerclass(scope, parent, *args, **kwargs)
                 return self.logger_dict[scope]
         finally:
             _release_lock()
@@ -48,30 +51,19 @@ class LoggerManager():
         return self.logger_dict[parent_scope]
 
 
-class Logger:
-
-    def __init__(self, scope, parent, **kwargs):
+class AbstractLogger(ABC):
+    def __init__(self, scope, parent, *args, **kwargs):
 
         self._scope = scope
         self.parent = self if scope == 'root' else parent
 
+        self.tensorboard_writer = None
+        self.hdf_writer = None
+        self.file_writer = None
+
         self.configure(**kwargs)
 
-    @property
-    def scope(self):
-        return self._scope + '-' + current_process().name.replace('-', '')
-
-    @property
-    def logdir(self):
-        return self._logdir if self._logdir is not None else self.parent.logdir
-
-    @logdir.setter
-    def logdir(self, value):
-        self._logdir = value
-
-    def configure(self, logdir=None, default_outputs=None, hdf_writer_params=None, tensorboard_writer_params=None,
-                  log_only_main_process=False, file_writer_params=None, debug=False, default_path_exists='c'):
-
+    def configure(self, logdir, default_path_exists, *args, **kwargs):
         if logdir is not None and os.path.exists(logdir):
             response = input(f'logdir {logdir} already exists [(C)ontinue/(cl)ear/(a)bort: ') if \
                 default_path_exists == 'ask' else default_path_exists
@@ -87,6 +79,48 @@ class Logger:
 
         self._logdir = logdir
 
+    @property
+    def scope(self):
+        return self._scope + '-' + current_process().name.replace('-', '')
+
+    @property
+    def logdir(self):
+        return self._logdir if self._logdir is not None else self.parent.logdir
+
+    @logdir.setter
+    def logdir(self, value):
+        self._logdir = value
+
+    def log(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def close(self):
+        print(f'{self.scope} logger killed')
+        if self.hdf_writer is not None:
+            self.hdf_writer.close()
+        if self.tensorboard_writer is not None:
+            self.tensorboard_writer.close()
+        if self.file_writer is not None:
+            self.file_writer.close()
+
+    def to_stdout(self, data):
+        print(data)
+
+    def gen_key(self, key=None):
+        scope = self.scope
+        if scope.endswith('-MainProcess'):
+            scope = scope[:-12]
+
+        return scope + (('/' + key) if key else '')
+
+
+class Logger(AbstractLogger):
+
+    def configure(self, logdir=None, default_outputs=None, hdf_writer_params=None, tensorboard_writer_params=None,
+                  log_only_main_process=False, file_writer_params=None, debug=False, default_path_exists='c'):
+
+        super().configure(logdir, default_path_exists)
+
         if default_outputs is not None:
             validate_outputs(default_outputs)
         self.default_outputs = default_outputs
@@ -97,9 +131,6 @@ class Logger:
             self.manager = Manager()
             self.step_per_key = self.manager.dict()
 
-        self.tensorboard_writer = None
-        self.hdf_writer = None
-        self.file_writer = None
         if logdir is not None:
             tensorboard_writer_params = tensorboard_writer_params if tensorboard_writer_params else {}
             self.tensorboard_writer = TensorboardWriter(scope=self._scope, output_dir=os.path.join(logdir, "events"),
@@ -159,13 +190,6 @@ class Logger:
         else:
             return self.step_per_key
 
-    def gen_key(self, key=None):
-        scope = self.scope
-        if scope.endswith('-MainProcess'):
-            scope = scope[:-12]
-
-        return scope + (('/' + key) if key else '')
-
     @filter
     def _to_writer(self, writer, key, data_type, data, step=None):
         if self.log_only_main_process and current_process().name != 'MainProcess':
@@ -209,9 +233,6 @@ class Logger:
 
         return self._to_writer(tensorboard_writer or self.parent.hdf_writer, key, data_type, data, step)
 
-    def to_stdout(self, data):
-        print(data)
-
     def info(self, data, to_stdout=False):
         file_writer = self.file_writer if self.file_writer else self.parent.file_writer
         message = file_writer.add_text(self.gen_key(None), data)
@@ -219,28 +240,44 @@ class Logger:
         if to_stdout is True:
             self.to_stdout(message)
 
-    def close(self):
-        print(f'{self.scope} logger killed')
-        if self.hdf_writer is not None:
-            self.hdf_writer.close()
-        if self.tensorboard_writer is not None:
-            self.tensorboard_writer.close()
-        if self.file_writer is not None:
-            self.file_writer.close()
 
+
+class DummyLogger(AbstractLogger):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self._scope == 'root':
+            warn('Logger is globally disabled. Nothing will be logged.')
+
+    def log(self, *args, **kwargs):
+        pass
+
+    def configure(self, logdir=None, default_path_exists='c', *args, **kwargs):
+        super().configure(logdir, default_path_exists)
+
+    def info(self, data, to_stdout=False):
+        if to_stdout is True:
+            self.to_stdout(f'[{self.gen_key(None)}] {time()} > {data}')
 
 root = None
 manager = None
+loggerclass = Logger
 
 
 def get_root():
     global root
     if root is None:
-        root = Logger('root', None)
+        root = loggerclass('root', None)
     return root
 
 
-def basic_configure(*args, **kwargs):
+def basic_configure(enable=True, *args, **kwargs):
+    global loggerclass
+
+    if not enable:
+       loggerclass = DummyLogger
+
     root = get_root()
     root.configure(*args, **kwargs)
 

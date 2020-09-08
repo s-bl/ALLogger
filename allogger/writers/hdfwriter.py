@@ -3,6 +3,7 @@ import pandas as pd
 from time import time as timestamp
 from multiprocessing import current_process
 from warnings import warn
+import numpy as np
 
 from .abstract_writer import AbstractWriter
 from .helpers import gen_filename, time, add_value_wrapper
@@ -64,11 +65,8 @@ class HDFWriter(AbstractWriter):
                 warn_msg += ". Consider setting precision to a small value"
             warn(warn_msg, stacklevel=7)
             self.first_time_add_image = False
-        if self.precision is None:
-            _value = value
-        else:
-            _value = value.round(self.precision)
-        self.data[('image', key)].append(self.fixed_data_prefix(step) + [str(_value.tolist())])
+        _value = self._array_to_string(value)
+        self.data[('image', key)].append(self.fixed_data_prefix(step) + [_value])
 
     @concurrent
     @add_value_wrapper
@@ -84,11 +82,8 @@ class HDFWriter(AbstractWriter):
                 warn_msg += ". Consider setting precision to a small value"
             warn(warn_msg, stacklevel=7)
             self.first_time_add_array = False
-        if self.precision is None:
-            _value = value
-        else:
-            _value = value.round(self.precision)
-        self.data[('array', key)].append(self.fixed_data_prefix(step) + [str(value.tolist())])
+        _value = self._array_to_string(value)
+        self.data[('array', key)].append(self.fixed_data_prefix(step) + [_value])
 
     def __repr__(self):
         return 'HDFWriter'
@@ -98,4 +93,12 @@ class HDFWriter(AbstractWriter):
         if current_process().name == 'MainProcess' or self.scope != 'root':
             self.write_to_disc()
             print(f'{self} closed')
+
+    def _array_to_string(self, value):
+        if self.precision is None:
+            _value = np.array2string(value, separator=',')
+        else:
+            _value = np.array2string(value, precision=self.precision, separator=',')
+
+        return _value
 
