@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="AL-Logger",
-    version="0.2.4",
+    version="0.2.5",
     author="Sebastian Blaes",
     author_email="sblaes@tue.mpg.de",
     description="Logging experimental data",
@@ -24,6 +24,7 @@ setuptools.setup(
         'numpy',
         'tables',
         'gitpython',
-        'pillow'
+        'pillow',
+        'h5py'
       ],
 )

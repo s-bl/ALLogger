@@ -1,12 +1,11 @@
 from socket import gethostname
-from datetime import datetime
 from time import time as timestamp
 
 def gen_filename():
     return str(int(timestamp())) + '_' + gethostname()
 
 def time():
-    return datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    return timestamp()
 
 def add_value_wrapper(f):
     def wrapper(self, key, *args, **kwargs):

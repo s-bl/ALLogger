@@ -52,7 +52,7 @@ class LoggerManager():
 
 
 class AbstractLogger(ABC):
-    def __init__(self, scope, parent, *args, **kwargs):
+    def __init__(self, scope, parent):
 
         self._scope = scope
         self.parent = self if scope == 'root' else parent
@@ -60,8 +60,6 @@ class AbstractLogger(ABC):
         self.tensorboard_writer = None
         self.hdf_writer = None
         self.file_writer = None
-
-        self.configure(**kwargs)
 
     def configure(self, logdir, default_path_exists, *args, **kwargs):
         if logdir is not None and os.path.exists(logdir):
@@ -77,7 +75,13 @@ class AbstractLogger(ABC):
             else:
                 raise RuntimeError('Unrecognized response. Valid responses are \'c\', \'cl\' or \'a\'')
 
+            os.makedirs(logdir, exist_ok=True)
+
         self._logdir = logdir
+
+        if self._scope == 'root':
+            self.manager = DummyManager()
+            self.step_per_key = {}
 
     @property
     def scope(self):
@@ -113,8 +117,12 @@ class AbstractLogger(ABC):
 
         return scope + (('/' + key) if key else '')
 
-
 class Logger(AbstractLogger):
+
+    def __init__(self, scope, parent,  *args, **kwargs):
+        super().__init__(scope, parent)
+
+        self.configure(*args, **kwargs)
 
     def configure(self, logdir=None, default_outputs=None, hdf_writer_params=None, tensorboard_writer_params=None,
                   log_only_main_process=False, file_writer_params=None, debug=False, default_path_exists='c'):
@@ -240,12 +248,17 @@ class Logger(AbstractLogger):
         if to_stdout is True:
             self.to_stdout(message)
 
+class DummyManager:
 
+    def dict(self, *args, **kwargs):
+        return {}
 
 class DummyLogger(AbstractLogger):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, scope, parent, *args, **kwargs):
+        super().__init__(scope, parent)
+
+        self.configure(*args, **kwargs)
 
         if self._scope == 'root':
             warn('Logger is globally disabled. Nothing will be logged.')

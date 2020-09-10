@@ -5,7 +5,7 @@ import os
 import allogger
 
 def main():
-    allogger.basic_configure('/tmp/allogger/singleprocess', ['tensorboard'], hdf_writer_params=dict(
+    allogger.basic_configure(logdir='/tmp/allogger/singleprocess', default_outputs=['tensorboard'], hdf_writer_params=dict(
         min_time_diff_btw_disc_writes=10, precision=2,
     ), debug=True, default_path_exists='ask')
     allogger.utils.report_env(to_stdout=True)
