@@ -1,7 +1,7 @@
 import os
 from time import time as timestamp
 from multiprocessing import current_process
-from warnings import warn
+import logging
 import numpy as np
 import h5py
 
@@ -45,14 +45,14 @@ class HDFWriter(AbstractWriter):
                             hf[key].resize((hf[key].shape[0] + len(data)), axis=0)
                             hf[key][-len(data):] = data
                     except Exception as e:
-                        print(f'Error while writing {key} to {os.path.join(self.output_dir, self.filename + ".h5")}')
+                        logging.error(f'[{self.scope}] > Error while writing {key} to {os.path.join(self.output_dir, self.filename + ".h5")}')
                         if self.debug:
                             print(str(e))
 
                 self.data.clear()
 
         except Exception as e:
-            print(f'Could not open {os.path.join(self.output_dir, self.filename + ".h5")} for writing, waiting for next write cycle')
+            logging.warning(f'[{self.scope}] > Could not open {os.path.join(self.output_dir, self.filename + ".h5")} for writing, waiting for next write cycle')
             if self.debug:
                 print(str(e))
 
@@ -77,7 +77,7 @@ class HDFWriter(AbstractWriter):
             warn_msg = "Writing image data to hdf can cause huge h5 files"
             if self.precision is None:
                 warn_msg += ". Consider setting precision to a small value"
-            warn(warn_msg, stacklevel=7)
+            logging.warning(f'[{self.scope}] > {warn_msg}')
             self.first_time_add_image = False
         self.data[('image', key)].append(self.fixed_data_prefix(step) + [value.tolist()])
 
@@ -93,7 +93,7 @@ class HDFWriter(AbstractWriter):
             warn_msg = "Writing array data to hdf can cause huge h5 files"
             if self.precision is None:
                 warn_msg += ". Consider setting precision to a small value"
-            warn(warn_msg, stacklevel=7)
+            logging.warning(f'[{self.scope}] > {warn_msg}')
             self.first_time_add_array = False
         self.data[('array', key)].append(self.fixed_data_prefix(step) + [value.tolist()])
 
@@ -104,5 +104,5 @@ class HDFWriter(AbstractWriter):
         AbstractWriter.close(self)
         if current_process().name == 'MainProcess' or self.scope != 'root':
             self.write_to_disc()
-            print(f'{self} closed')
+            logging.info(f'[{self.scope}] > closed')
 

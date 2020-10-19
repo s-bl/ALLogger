@@ -5,7 +5,7 @@ from multiprocessing import current_process, Manager
 from shutil import rmtree
 from abc import ABC
 from time import time
-from warnings import warn
+import logging
 
 from .writers import *
 from .helpers import _release_lock, _acquire_lock, filter
@@ -99,7 +99,7 @@ class AbstractLogger(ABC):
         raise NotImplementedError()
 
     def close(self):
-        print(f'{self.scope} logger killed')
+        logging.info(f'[{self.scope}] > logger killed')
         if self.hdf_writer is not None:
             self.hdf_writer.close()
         if self.tensorboard_writer is not None:
@@ -272,7 +272,7 @@ class DummyLogger(AbstractLogger):
         self.configure(*args, **kwargs)
 
         if self._scope == 'root':
-            warn('Logger is globally disabled. Nothing will be logged.')
+            logging.warning('Logger is globally disabled. Nothing will be logged.')
 
     def log(self, *args, **kwargs):
         pass
@@ -317,5 +317,5 @@ def close():
     global manager
     if manager is not None:
         for logger in reversed(manager.logger_dict.values()):
-            print(logger.scope)
+            logging.info(logger.scope)
             logger.close()

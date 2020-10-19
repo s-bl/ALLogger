@@ -1,5 +1,6 @@
 from multiprocessing import Lock
 from re import search as re_search
+import logging
 
 _lock = Lock()
 
@@ -12,7 +13,7 @@ def _release_lock():
 def filter(f):
     def wrapper(self, writer, key, *args, **kwargs):
         if re_search(writer.filter, key) is None:
-            print(f'{writer} ignoring {key}')
+            logging.info(f'{writer} ignoring {key}')
             return
 
         return f(self, writer, key, *args, **kwargs)

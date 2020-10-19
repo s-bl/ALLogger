@@ -1,6 +1,7 @@
 import os
 from time import time as timestamp
 from multiprocessing import current_process
+import logging
 
 from .abstract_writer import AbstractWriter
 from .helpers import gen_filename, time, add_value_wrapper
@@ -30,7 +31,7 @@ class FileWriter(AbstractWriter):
                     for line in self.data['text']:
                         f.write(line + '\n')
             except Exception as e:
-                print(f'Error while writing to {os.path.join(self.output_dir, self.filename + ".log")}')
+                logging.error(f'[{self.scope}] > Error while writing to {os.path.join(self.output_dir, self.filename + ".log")}')
                 if self.debug:
                     print(str(e))
 
@@ -82,5 +83,5 @@ class FileWriter(AbstractWriter):
         AbstractWriter.close(self)
         if current_process().name == 'MainProcess' or self.scope != 'root':
             self.write_to_disc()
-            print(f'{self} closed')
+            logging.info(f'[{self.scope}] > closed')
 

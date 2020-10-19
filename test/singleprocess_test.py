@@ -4,6 +4,9 @@ import os
 
 import allogger
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 def main():
     allogger.basic_configure(logdir='/tmp/allogger/singleprocess', default_outputs=['tensorboard'], hdf_writer_params=dict(
         min_time_diff_btw_disc_writes=10, precision=2,
