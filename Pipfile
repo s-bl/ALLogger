@@ -15,6 +15,7 @@ matplotlib = "*"
 gitpython = "*"
 pillow = "*"
 h5py = "*"
+tensorboard = "*"
 
 [requires]
 python_version = "3.7"

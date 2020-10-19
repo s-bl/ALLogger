@@ -19,7 +19,7 @@ def validate_outputs(outputs):
             raise ValueError(f"{d} is not a valid output")
 
 
-class LoggerManager():
+class LoggerManager:
 
     def __init__(self, root):
         self.root = root
@@ -124,6 +124,10 @@ class Logger(AbstractLogger):
 
         self.configure(*args, **kwargs)
 
+    @property
+    def default_outputs(self):
+        return self._default_outputs or self.parent._default_outputs
+
     def configure(self, logdir=None, default_outputs=None, hdf_writer_params=None, tensorboard_writer_params=None,
                   log_only_main_process=False, file_writer_params=None, debug=False, default_path_exists='c'):
 
@@ -131,7 +135,7 @@ class Logger(AbstractLogger):
 
         if default_outputs is not None:
             validate_outputs(default_outputs)
-        self.default_outputs = default_outputs
+        self._default_outputs = default_outputs
 
         self.log_only_main_process = log_only_main_process
 
@@ -176,21 +180,22 @@ class Logger(AbstractLogger):
         if data_type is None:
             data_type = self.infer_datatype(data)
 
-        default_outputs = self.default_outputs or self.parent.default_outputs
-
         output_callables = []
-        if to_tensorboard or (to_tensorboard is None and 'tensorboard' in default_outputs):
+        if to_tensorboard or (to_tensorboard is None and 'tensorboard' in self.default_outputs):
             output_callables.append(self.to_tensorboard)
-        if to_stdout or (to_stdout is None and 'stdout' in default_outputs):
+        if to_stdout or (to_stdout is None and 'stdout' in self.default_outputs):
             output_callables.append(self.to_stdout)
-        if to_csv or (to_csv is None and 'csv' in default_outputs):
+        if to_csv or (to_csv is None and 'csv' in self.default_outputs):
             raise NotImplementedError('CSV writer not implemented')
             # output_callables.append(self.to_csv)
-        if to_hdf or (to_hdf is None and 'hdf' in default_outputs):
+        if to_hdf or (to_hdf is None and 'hdf' in self.default_outputs):
             output_callables.append(self.to_hdf)
 
+        update_step = True
+        step = None
         for output_callable in output_callables:
-            output_callable(key, data_type, data)
+            step = output_callable(key, data_type, data, step=step, skip_step_update=(not update_step))
+            update_step = False
 
     def rv_step_per_key(self):
         if self._scope != 'root':
@@ -199,7 +204,7 @@ class Logger(AbstractLogger):
             return self.step_per_key
 
     @filter
-    def _to_writer(self, writer, key, data_type, data, step=None):
+    def _to_writer(self, writer, key, data_type, data, step=None, skip_step_update=False):
         if self.log_only_main_process and current_process().name != 'MainProcess':
             return
 
@@ -210,7 +215,9 @@ class Logger(AbstractLogger):
             if (self.scope, key) not in self.rv_step_per_key():
                 self.rv_step_per_key()[(self.scope, key)] = 1
             step = self.rv_step_per_key()[(self.scope, key)]
-            self.rv_step_per_key()[(self.scope, key)] = self.rv_step_per_key()[(self.scope, key)] + 1
+
+            if not skip_step_update:
+                self.rv_step_per_key()[(self.scope, key)] = self.rv_step_per_key()[(self.scope, key)] + 1
 
         if data_type == "scalar":
             data_specific_writer_callable = writer.add_scalar
@@ -230,16 +237,20 @@ class Logger(AbstractLogger):
 
         return step
 
-    def to_hdf(self, key, data_type, data, step=None):
-        return self._to_writer(self.hdf_writer or self.parent.hdf_writer, key, data_type, data, step)
+    def to_hdf(self, key, data_type, data, step=None, skip_step_update=False):
+        hdf_writer = self.hdf_writer or self.parent.hdf_writer
 
-    def to_tensorboard(self, key, data_type, data, step=None):
+        return self._to_writer(hdf_writer, key, data_type, data, step, skip_step_update)
+
+    def to_tensorboard(self, key, data_type, data, step=None, skip_step_update=False):
         tensorboard_writer = self.tensorboard_writer or self.parent.tensorboard_writer
 
-        if tensorboard_writer.use_hdf_hook:
-            step = self.to_hdf(key, data_type, data, step)
+        step = self._to_writer(tensorboard_writer or self.parent.hdf_writer, key, data_type, data, step, skip_step_update)
 
-        return self._to_writer(tensorboard_writer or self.parent.hdf_writer, key, data_type, data, step)
+        if tensorboard_writer.use_hdf_hook and 'hdf' not in self.default_outputs:
+            self.to_hdf(key, data_type, data, step=step, skip_step_update=True)
+
+        return step
 
     def info(self, data, to_stdout=False):
         file_writer = self.file_writer if self.file_writer else self.parent.file_writer
