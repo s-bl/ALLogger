@@ -6,9 +6,13 @@ from shutil import rmtree
 from abc import ABC
 from time import time
 import logging
+from warnings import warn
+from socket import gethostname
+from time import time as timestamp
 
 from .writers import *
-from .helpers import _release_lock, _acquire_lock, filter
+from .helpers import _release_lock, _acquire_lock, filter, recursively_update
+from .constants import *
 
 valid_outputs = ["tensorboard", 'hdf']
 
@@ -57,11 +61,13 @@ class AbstractLogger(ABC):
         self._scope = scope
         self.parent = self if scope == 'root' else parent
 
+        self.logger = None
+
         self.tensorboard_writer = None
         self.hdf_writer = None
-        self.file_writer = None
+        # self.file_writer = None
 
-    def configure(self, logdir, default_path_exists, *args, **kwargs):
+    def configure(self, logdir, default_path_exists, basic_logging_params, *args, **kwargs):
         if logdir is not None and os.path.exists(logdir):
             response = input(f'logdir {logdir} already exists [(C)ontinue/(cl)ear/(a)bort: ') if \
                 default_path_exists == 'ask' else default_path_exists
@@ -83,6 +89,18 @@ class AbstractLogger(ABC):
             self.manager = DummyManager()
             self.step_per_key = {}
 
+        self.logger = logging.getLogger(self._scope)
+        if self._scope != 'root':
+            basic_logging_params = {} or basic_logging_params
+            basic_logging_params = recursively_update(default_basic_logging_params, basic_logging_params)
+            formatter = logging.Formatter(**basic_logging_params['formatter'])
+
+            sh = logging.StreamHandler()
+            sh.setLevel(basic_logging_params['level'])
+            sh.setFormatter(formatter)
+
+            self.logger.addHandler(sh)
+
     @property
     def scope(self):
         return self._scope + '-' + current_process().name.replace('-', '')
@@ -99,13 +117,13 @@ class AbstractLogger(ABC):
         raise NotImplementedError()
 
     def close(self):
-        logging.info(f'[{self.scope}] > logger killed')
+        self.logger.info(f'logger killed')
         if self.hdf_writer is not None:
             self.hdf_writer.close()
         if self.tensorboard_writer is not None:
             self.tensorboard_writer.close()
-        if self.file_writer is not None:
-            self.file_writer.close()
+        # if self.file_writer is not None:
+        #     self.file_writer.close()
 
     def to_stdout(self, data):
         print(data)
@@ -129,9 +147,12 @@ class Logger(AbstractLogger):
         return self._default_outputs or self.parent._default_outputs
 
     def configure(self, logdir=None, default_outputs=None, hdf_writer_params=None, tensorboard_writer_params=None,
-                  log_only_main_process=False, file_writer_params=None, debug=False, default_path_exists='c'):
+                  log_only_main_process=False, file_writer_params=None, debug=False, default_path_exists='c',
+                  basic_logging_params=None):
 
-        super().configure(logdir, default_path_exists)
+        if basic_logging_params is None:
+            basic_logging_params = dict()
+        super().configure(logdir, default_path_exists, basic_logging_params)
 
         if default_outputs is not None:
             validate_outputs(default_outputs)
@@ -153,8 +174,8 @@ class Logger(AbstractLogger):
                                         debug=debug, **hdf_writer_params)
 
             file_writer_params = file_writer_params if file_writer_params else {}
-            self.file_writer = FileWriter(scope=self._scope, output_dir=os.path.join(logdir),
-                                          debug=debug, **file_writer_params)
+            # self.file_writer = FileWriter(scope=self._scope, output_dir=os.path.join(logdir),
+            #                               debug=debug, **file_writer_params)
 
         self.debug = debug
 
@@ -252,12 +273,8 @@ class Logger(AbstractLogger):
 
         return step
 
-    def info(self, data, to_stdout=False):
-        file_writer = self.file_writer if self.file_writer else self.parent.file_writer
-        message = file_writer.add_text(self.gen_key(None), data)
-
-        if to_stdout is True:
-            self.to_stdout(message)
+    def info(self, data, level=logging.INFO):
+        self.logger.log(level, data)
 
 class DummyManager:
 
@@ -272,7 +289,7 @@ class DummyLogger(AbstractLogger):
         self.configure(*args, **kwargs)
 
         if self._scope == 'root':
-            logging.warning('Logger is globally disabled. Nothing will be logged.')
+            warn('Logger is globally disabled. Nothing will be logged.')
 
     def log(self, *args, **kwargs):
         pass
@@ -305,6 +322,14 @@ def basic_configure(enable=True, *args, **kwargs):
     root = get_root()
     root.configure(*args, **kwargs)
 
+    basic_logging_params = kwargs.get('basic_logging_params', {})
+    basic_logging_params = recursively_update(default_basic_logging_params, basic_logging_params)
+
+    logging.basicConfig(filename=os.path.join(root.logdir, str(int(timestamp())) + '_' + gethostname() + '.log'),
+                        filemode='a',
+                        format=basic_logging_params['formatter']['fmt'],
+                        datefmt=basic_logging_params['formatter']['datefmt'],
+                        level=logging.DEBUG)
 
 def get_logger(scope, *args, **kwargs):
     global manager
@@ -317,5 +342,4 @@ def close():
     global manager
     if manager is not None:
         for logger in reversed(manager.logger_dict.values()):
-            logging.info(logger.scope)
             logger.close()

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from multiprocessing import current_process, Manager
 from threading import Timer
+import logging
 
 class AbstractWriter(ABC):
 
@@ -16,6 +17,8 @@ class AbstractWriter(ABC):
 
         self.manager = Manager()
         self.data = self.manager.dict()
+
+        self.logger = logging.getLogger(self.scope)
 
         if current_process().name == 'MainProcess' or self.scope != 'root':
             self.start()

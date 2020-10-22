@@ -1,4 +1,5 @@
 import os
+import logging
 
 from . import get_logger, get_root
 
@@ -8,8 +9,9 @@ def report_env(to_stdout=False):
     from socket import gethostname
     from getpass import getuser
 
-    root = get_root()
-    root.info(f'Running on {gethostname()} as {getuser()}', to_stdout=to_stdout)
+    logger = get_logger('env', basic_logging_params={'level': logging.INFO if to_stdout else logging.WARNING})
+
+    logger.info(f'Running on {gethostname()} as {getuser()}')
 
     project_path = os.path.dirname(os.path.realpath(__file__))
     try:
@@ -18,8 +20,10 @@ def report_env(to_stdout=False):
         latest_commit = repo.commit(active_branch)
         latest_commit_sha = latest_commit.hexsha
         latest_commit_sha_short = repo.git.rev_parse(latest_commit_sha, short=6)
-        root.info(f'We are on branch {active_branch} using commit {latest_commit_sha_short}', to_stdout=to_stdout)
+        logger.info(f'We are on branch {active_branch} using commit {latest_commit_sha_short}')
     except InvalidGitRepositoryError:
-        root.info(f'{project_path} is not a git repo', to_stdout=to_stdout)
+        logger.info(f'{project_path} is not a git repo')
 
-    root.info(f'Saving data to {root.logdir}', to_stdout=to_stdout)
+    logger.info(f'Saving data to {logger.logdir}')
+
+    logger.logger.handlers.clear()

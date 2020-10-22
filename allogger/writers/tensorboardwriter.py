@@ -1,6 +1,5 @@
 from tensorboardX import SummaryWriter
 from multiprocessing import current_process
-import logging
 
 from .abstract_writer import AbstractWriter
 from .helpers import add_value_wrapper
@@ -73,4 +72,4 @@ class TensorboardWriter(AbstractWriter):
             self.write_to_writer()
             self.summary_writer.flush()
             self.summary_writer.close()
-            logging.info(f'[{self.scope}] > closed')
+            self.logger.info(f'{self} closed')
